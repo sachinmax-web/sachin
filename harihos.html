@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Appointment System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Animation for new appointments */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .new-appointment {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Pulse effect for notifications */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header Section -->
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Medical Appointment System</h1>
+                <p class="text-gray-600">Manage your healthcare appointments</p>
+            </div>
+            <div>
+                <button id="notificationBtn" class="relative mr-4 p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    <span id="notificationCount" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+                </button>
+                <button onclick="location.href='patient.html'" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                    </svg>
+                    Back to Patient Portal
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500">
+                <h3 class="text-gray-500 text-sm font-medium">Total Appointments</h3>
+                <p id="totalAppointments" class="text-3xl font-bold text-gray-800">0</p>
+                <p class="text-sm text-gray-500">+0 today</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500">
+                <h3 class="text-gray-500 text-sm font-medium">Completed</h3>
+                <p id="completedAppointments" class="text-3xl font-bold text-green-600">0</p>
+                <p class="text-sm text-gray-500">+0 today</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-yellow-500">
+                <h3 class="text-gray-500 text-sm font-medium">Pending</h3>
+                <p id="pendingAppointments" class="text-3xl font-bold text-yellow-600">0</p>
+                <p class="text-sm text-gray-500">+0 today</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-red-500">
+                <h3 class="text-gray-500 text-sm font-medium">Cancelled</h3>
+                <p id="cancelledAppointments" class="text-3xl font-bold text-red-600">0</p>
+                <p class="text-sm text-gray-500">+0 today</p>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h2 class="text-xl font-semibold text-gray-800">Booked Appointments</h2>
+                <button id="addAppointmentBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                    New Appointment
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Appointment #</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Diagnosis</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="appointmentTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Appointments will be added here dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="emptyState" class="p-8 text-center">
+                <img src="https://placehold.co/300x200?text=No+Appointments+Booked" alt="Empty appointment calendar illustration with a calendar icon" class="mx-auto mb-4 rounded-lg">
+                <h3 class="text-lg font-medium text-gray-900">No appointments booked yet</h3>
+                <p class="mt-1 text-sm text-gray-500">Get started by creating a new appointment.</p>
+                <button id="emptyStateBtn" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    Book Appointment
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for adding appointment -->
+    <div id="appointmentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-gray-900">New Appointment</h3>
+                    <button id="closeModalBtn" class="text-gray-500 hover:text-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <form id="appointmentForm" class="space-y-4">
+                    <div>
+                        <label for="patientId" class="block text-sm font-medium text-gray-700">Patient ID</label>
+                        <input type="text" id="patientId" name="patientId" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+
+                    <div>
+                        <label for="patientName" class="block text-sm font-medium text-gray-700">Patient Name</label>
+                        <input type="text" id="patientName" name="patientName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+
+                    <div>
+                        <label for="appointmentDate" class="block text-sm font-medium text-gray-700">Date</label>
+                        <input type="date" id="appointmentDate" name="appointmentDate" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+
+                    <div>
+                        <label for="appointmentTime" class="block text-sm font-medium text-gray-700">Time</label>
+                        <input type="time" id="appointmentTime" name="appointmentTime" min="08:00" max="17:00" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+
+                    <div>
+                        <label for="department" class="block text-sm font-medium text-gray-700">Department</label>
+                        <select id="department" name="department" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="general">General Medicine</option>
+                            <option value="cardio">Cardiology</option>
+                            <option value="ortho">Orthopedics</option>
+                            <option value="neuro">Neurology</option>
+                            <option value="pediatric">Pediatrics</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="diagnosis" class="block text-sm font-medium text-gray-700">Diagnosis / Reason</label>
+                        <textarea id="diagnosis" name="diagnosis" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required></textarea>
+                    </div>
+
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" id="cancelAppointmentBtn" class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Book Appointment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div id="toast" class="fixed bottom-4 right-4 p-4 bg-green-600 text-white rounded-lg shadow-lg hidden flex items-center space-x-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+        </svg>
+        <span id="toastMessage">Appointment booked successfully!</span>
+    </div>
+
+    <script>
+        // DOM Elements
+        const addAppointmentBtn = document.getElementById('addAppointmentBtn');
+        const emptyStateBtn = document.getElementById('emptyStateBtn');
+        const appointmentModal = document.getElementById('appointmentModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const cancelAppointmentBtn = document.getElementById('cancelAppointmentBtn');
+        const appointmentForm = document.getElementById('appointmentForm');
+        const appointmentTableBody = document.getElementById('appointmentTableBody');
+        const emptyState = document.getElementById('emptyState');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+        const appointmentDateInput = document.getElementById('appointmentDate');
+        const notificationBtn = document.getElementById('notificationBtn');
+        const notificationCount = document.getElementById('notificationCount');
+
+        // Stats elements
+        const totalAppointmentsEl = document.getElementById('totalAppointments');
+        const completedAppointmentsEl = document.getElementById('completedAppointments');
+        const pendingAppointmentsEl = document.getElementById('pendingAppointments');
+        const cancelledAppointmentsEl = document.getElementById('cancelledAppointments');
+
+        // Appointments data
+        let appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+        let notifications = JSON.parse(localStorage.getItem('notifications')) || [];
+
+        // Set minimum date to today
+        const today = new Date();
+        const dd = String(today.getDate()).padStart(2, '0');
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const yyyy = today.getFullYear();
+        appointmentDateInput.min = ${yyyy}-${mm}-${dd};
+
+        // Set maximum date to 1 year from now
+        const nextYear = new Date();
+        nextYear.setFullYear(nextYear.getFullYear() + 1);
+        const maxDd = String(nextYear.getDate()).padStart(2, '0');
+        const maxMm = String(nextYear.getMonth() + 1).padStart(2, '0');
+        const maxYyyy = nextYear.getFullYear();
+        appointmentDateInput.max = ${maxYyyy}-${maxMm}-${maxDd};
+
+        // Format date as DD/MM/YYYY
+        function formatDate(dateString) {
+            const [year, month, day] = dateString.split('-');
+            return ${day}/${month}/${year};
+        }
+
+        // Format time to 12-hour format
+        function formatTime(timeString) {
+            const [hours, minutes] = timeString.split(':');
+            const period = hours >= 12 ? 'PM' : 'AM';
+            const hours12 = hours % 12 || 12;
+            return ${hours12}:${minutes} ${period};
+        }
+
+        // Generate a random appointment number
+        function generateAppointmentNumber() {
+            return 'APT-' + Math.floor(100000 + Math.random() * 900000);
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            toastMessage.textContent = message;
+            toast.className = fixed bottom-4 right-4 p-4 text-white rounded-lg shadow-lg flex items-center space-x-2 ${type === 'success' ? 'bg-green-600' : 'bg-red-600'};
+            
+            // Add 'block' class to override the 'hidden' class
+            toast.classList.remove('hidden');
+            
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Update stats counters
+        function updateStats() {
+            const total = appointments.length;
+            const completed = appointments.filter(apt => apt.status === 'Completed').length;
+            const pending = appointments.filter(apt => apt.status === 'Pending').length;
+            const cancelled = appointments.filter(apt => apt.status === 'Cancelled').length;
+
+            totalAppointmentsEl.textContent = total;
+            completedAppointmentsEl.textContent = completed;
+            pendingAppointmentsEl.textContent = pending;
+            cancelledAppointmentsEl.textContent = cancelled;
+        }
+
+        // Update notifications
+        function updateNotifications() {
+            const unreadCount = notifications.filter(n => !n.read).length;
+            notificationCount.textContent = unreadCount;
+            if (unreadCount > 0) {
+                notificationCount.classList.remove('hidden');
+                notificationBtn.classList.add('pulse');
+            } else {
+                notificationCount.classList.add('hidden');
+                notificationBtn.classList.remove('pulse');
+            }
+        }
+
+        // Render appointments table
+        function renderAppointments() {
+            if (appointments.length === 0) {
+                emptyState.classList.remove('hidden');
+                appointmentTableBody.innerHTML = '';
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            appointmentTableBody.innerHTML = '';
+
+            appointments.forEach((appointment, index) => {
+                const tr = document.createElement('tr');
+                tr.className = index >= appointments.length - 3 ? 'new-appointment' : '';
+                
+                const statusClass = {
+                    'Completed': 'bg-green-100 text-green-800',
+                    'Pending': 'bg-yellow-100 text-yellow-800',
+                    'Cancelled': 'bg-red-100 text-red-800'
+                }[appointment.status];
+
+                const paymentButtonClass = appointment.payment === 'Paid' 
+                    ? 'bg-green-100 text-green-800 cursor-default' 
+                    : 'bg-blue-100 text-blue-800 hover:bg-blue-200';
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${appointment.id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${appointment.patientName}</div>
+                        <div class="text-sm text-gray-500">ID: ${appointment.patientId}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${formatDate(appointment.date)}</div>
+                        <div class="text-sm text-gray-500">${formatTime(appointment.time)}</div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${appointment.diagnosis}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                            ${appointment.status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button onclick="togglePaymentStatus(${index})" class="px-2 py-1 text-xs leading-5 font-semibold rounded-full ${paymentButtonClass}">
+                            ${appointment.payment}
+                        </button>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div class="flex space-x-2">
+                            <button onclick="completeAppointment(${index})" class="text-green-600 hover:text-green-900">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button onclick="cancelAppointment(${index})" class="text-red-600 hover:text-red-900">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                appointmentTableBody.appendChild(tr);
+            });
+        }
+
+        // Toggle payment status
+        window.togglePaymentStatus = function(index) {
+            const appointment = appointments[index];
+            appointment.payment = appointment.payment === 'Paid' ? 'Unpaid' : 'Paid';
+            localStorage.setItem('appointments', JSON.stringify(appointments));
+            renderAppointments();
+            
+            if (appointment.payment === 'Paid') {
+                notifications.push({
+                    id: Date.now(),
+                    type: 'payment',
+                    message: Payment received for appointment ${appointment.id},
+                    read: false,
+                    timestamp: new Date().toISOString()
+                });
+                localStorage.setItem('notifications', JSON.stringify(notifications));
+                updateNotifications();
+                showToast('Payment status updated');
+            }
+        };
+
+        // Complete appointment
+        window.completeAppointment = function(index) {
+            const appointment = appointments[index];
+            appointment.status = 'Completed';
+            localStorage.setItem('appointments', JSON.stringify(appointments));
+            
+            notifications.push({
+                id: Date.now(),
+                type: 'status',
+                message: Appointment ${appointment.id} marked as completed,
+                read: false,
+                timestamp: new Date().toISOString()
+            });
+            localStorage.setItem('notifications', JSON.stringify(notifications));
+            
+            renderAppointments();
+            updateStats();
+            updateNotifications();
+            showToast('Appointment marked as completed');
+        };
+
+        // Cancel appointment
+        window.cancelAppointment = function(index) {
+            const appointment = appointments[index];
+            appointment.status = 'Cancelled';
+            localStorage.setItem('appointments', JSON.stringify(appointments));
+            
+            notifications.push({
+                id: Date.now(),
+                type: 'status',
+                message: Appointment ${appointment.id} was cancelled,
+                read: false,
+                timestamp: new Date().toISOString()
+            });
+            localStorage.setItem('notifications', JSON.stringify(notifications));
+            
+            renderAppointments();
+            updateStats();
+            updateNotifications();
+            showToast('Appointment cancelled');
+        };
+
+        // Event listeners
+        addAppointmentBtn.addEventListener('click', () => {
+            appointmentModal.classList.remove('hidden');
+        });
+
+        emptyStateBtn.addEventListener('click', () => {
+            appointmentModal.classList.remove('hidden');
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            appointmentModal.classList.add('hidden');
+        });
+
+        cancelAppointmentBtn.addEventListener('click', () => {
+            appointmentModal.classList.add('hidden');
+        });
+
+        notificationBtn.addEventListener('click', () => {
+            // Mark all notifications as read
+            notifications = notifications.map(n => ({...n, read: true}));
+            localStorage.setItem('notifications', JSON.stringify(notifications));
+            updateNotifications();
+            
+            // In a real app, this would show a notifications panel
+            showToast(${notifications.length} notifications, 'info');
+        });
+
+        appointmentForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const today = new Date();
+            const selectedDate = new Date(appointmentDateInput.value);
+            
+            // Validate appointment date is not in the past
+            if (selectedDate < today) {
+                showToast('Appointment date cannot be in the past', 'error');
+                return;
+            }
+            
+            // Validate appointment time is between 8AM and 5PM
+            const timeValue = document.getElementById('appointmentTime').value;
+            const [hours, minutes] = timeValue.split(':').map(Number);
+            if (hours < 8 || hours > 17 || (hours === 17 && minutes > 0)) {
+                showToast('Appointments must be between 8:00 AM and 5:00 PM', 'error');
+                return;
+            }
+            
+            const newAppointment = {
+                id: generateAppointmentNumber(),
+                patientId: document.getElementById('patientId').value,
+                patientName: document.getElementById('patientName').value,
+                date: document.getElementById('appointmentDate').value,
+                time: document.getElementById('appointmentTime').value,
+                department: document.getElementById('department').value,
+                diagnosis: document.getElementById('diagnosis').value,
+                status: 'Pending',
+                payment: 'Unpaid',
+                createdAt: new Date().toISOString()
+            };
+            
+            appointments.push(newAppointment);
+            localStorage.setItem('appointments', JSON.stringify(appointments));
+            
+            notifications.push({
+                id: Date.now(),
+                type: 'new',
+                message: New appointment booked: ${newAppointment.id},
+                read: false,
+                timestamp: new Date().toISOString()
+            });
+            localStorage.setItem('notifications', JSON.stringify(notifications));
+            
+            appointmentModal.classList.add('hidden');
+            appointmentForm.reset();
+            
+            renderAppointments();
+            updateStats();
+            updateNotifications();
+            showToast('Appointment booked successfully!');
+        });
+
+        // Initialize
+        renderAppointments();
+        updateStats();
+        updateNotifications();
+    </script>
+</body>
+</html>
